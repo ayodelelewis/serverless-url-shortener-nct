@@ -14,7 +14,7 @@ http://<data-bucket>.s3-website-us-east-1.amazonaws.com/44eadc83
 
 Anyone who opens that short link is instantly redirected to the original address.
 
-![Redirect landing page](redirect-landingpage.jpeg)
+![Redirect landing page](landingpage.jpeg)
 
 ## The idea behind it
 
@@ -60,9 +60,9 @@ So a "short link" here is literally just an **empty, zero-byte object** in S3 wh
  short-link visitor
 ```
 
-**Request flow for creating a link:** the frontend sends the long URL to API Gateway, which invokes the Lambda. The Lambda generates a short hash for the code, writes the zero-byte redirect object into the data bucket using its IAM execution role, and returns the short URL as JSON.
+**Creating a link:** the frontend sends the long URL to API Gateway, which invokes the Lambda. The Lambda generates a short code, writes the zero-byte redirect object into the data bucket using its IAM execution role, and returns the short URL as JSON.
 
-**Request flow for using a link:** the visitor's browser talks to S3's website endpoint directly. S3 sees the redirect metadata on the object and returns a 301. Lambda and API Gateway are not in this path at all.
+**Using a link:** the visitor's browser talks to S3's website endpoint directly. S3 sees the redirect metadata on the object and returns a 301. Lambda and API Gateway are not in this path at all.
 
 **The `/stats` route** lists objects in the data bucket so the frontend can show recent links.
 
@@ -75,10 +75,10 @@ So a "short link" here is literally just an **empty, zero-byte object** in S3 wh
 | Backend | Lambda (Python 3.14) | Generates codes, writes redirect objects |
 | Storage + redirects | S3 static website | The "database" *and* the redirect engine |
 
-Two pieces of configuration make it all hold together:
+Two pieces of configuration hold it together:
 
 - The **Lambda execution role** has S3 write permissions, which is how link creation works without any credentials in the code.
-- Both buckets have a **public-read bucket policy** (and Block Public Access disabled), because the frontend and the redirects are meant to be public. The frontend also needs its `Content-Type` to be `text/html` so browsers render it instead of downloading it.
+- Both buckets have a **public-read bucket policy** (with Block Public Access disabled), because the frontend and the redirects are meant to be public. The frontend object's `Content-Type` must be `text/html` so browsers render it instead of downloading it.
 
 ## Using the API directly
 
@@ -99,8 +99,6 @@ curl -X POST \
 
 ## Deploying your own
 
-High level — the full detail lives in the AWS console flows:
-
 1. **Two S3 buckets** (data + frontend), both with static website hosting enabled and public read policies.
 2. **Lambda** from [`lambda_function.py`](lambda_function.py), with env vars `BUCKET_NAME` (data bucket) and `BASE_URL` (the data bucket's *website endpoint*), and S3 permissions attached to its execution role.
 3. **HTTP API** in API Gateway with `POST /shorten`, `GET /stats`, and `OPTIONS /{proxy+}` all pointed at the Lambda, plus CORS allowing `GET, POST, OPTIONS` and the `Content-Type` header.
@@ -118,7 +116,7 @@ Order of operations matters less than understanding **who is accessing what**: L
 
 For light usage this sits inside the AWS free tier: S3 charges fractions of a cent for storage and requests, Lambda's free tier covers far more invocations than a personal shortener will see, and HTTP APIs are the cheap tier of API Gateway. There is no idle cost — nothing runs between requests.
 
-Trade-offs of the design: short links use the long S3 website hostname (a custom domain via CloudFront + Route 53 fixes that), redirects are HTTP on the raw endpoint (also solved by CloudFront, which adds HTTPS), and click analytics are limited to what S3 access logging provides.
+Trade-offs: short links use the long S3 website hostname (a custom domain via CloudFront + Route 53 fixes that), redirects are HTTP on the raw endpoint (also solved by CloudFront, which adds HTTPS), and click analytics are limited to what S3 access logging provides.
 
 ## Tear-down
 
@@ -133,10 +131,10 @@ aws apigatewayv2 delete-api --api-id <api-id>
 
 ```
 .
-├── index.html                 # Frontend — single file, no dependencies
-├── lambda_function.py         # Backend
-├── frontend.png               # Screenshot: web UI
-├── redirect-landingpage.png   # Screenshot: a short link resolving
+├── index.html            # Frontend — single file, no dependencies
+├── lambda_function.py    # Backend
+├── frontend.jpeg         # Screenshot: web UI
+├── landingpage.jpeg      # Screenshot: a short link resolving
 └── README.md
 ```
 
