@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>URL Shortener</title>
+<style>
+  :root {
+    --bg: #1c1d1f;
+    --bg-deep: #141517;
+    --panel: #16233f;
+    --field: #0e1930;
+    --ink: #eef1f6;
+    --ink-dim: #9aa7bd;
+    --accent: #f5d33f;
+    --accent-ink: #2a2200;
+    --hot: #ff9b6a;
+    --error: #ff6b6b;
+    --ok: #7dffb0;
+    --mono: "Consolas", "Menlo", monospace;
+    --sans: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    min-height: 100vh;
+    font-family: var(--sans);
+    color: var(--ink);
+    background-color: var(--bg);
+    background-image:
+      radial-gradient(ellipse 60% 50% at 70% 20%, rgba(120, 150, 220, 0.08), transparent 60%),
+      linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
+    background-size: auto, 48px 48px, 48px 48px;
+    display: flex;
+    justify-content: center;
+    padding: 64px 24px;
+  }
+
+  .wrap { width: 100%; max-width: 860px; }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 13px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--ink-dim);
+    margin-bottom: 18px;
+  }
+  .eyebrow .hosted { color: var(--hot); font-weight: bold; }
+
+  h1 {
+    font-size: clamp(40px, 7vw, 72px);
+    line-height: 1.02;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin-bottom: 14px;
+  }
+
+  .sub { font-size: 18px; color: var(--ink-dim); margin-bottom: 32px; }
+
+  .card {
+    background: rgba(18, 32, 66, 0.85);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 14px;
+    padding: 20px;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .field-col { flex: 1 1 340px; }
+
+  input[type="url"] {
+    width: 100%;
+    background: var(--field);
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 10px;
+    color: var(--ink);
+    font-family: var(--mono);
+    font-size: 16px;
+    padding: 16px 18px;
+    outline: none;
+  }
+  input[type="url"]::placeholder { color: #7d93d8; }
+  input[type="url"]:focus { border-color: var(--accent); }
+
+  button.shorten {
+    background: var(--accent);
+    color: var(--accent-ink);
+    border: none;
+    border-radius: 10px;
+    font-size: 17px;
+    font-weight: 700;
+    padding: 16px 34px;
+    cursor: pointer;
+    box-shadow: 0 4px 0 rgba(0,0,0,0.25);
+  }
+  button.shorten:hover { filter: brightness(1.05); }
+  button.shorten:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(0,0,0,0.25); }
+  button.shorten:disabled { opacity: 0.6; cursor: wait; }
+
+  .msg {
+    font-family: var(--mono);
+    font-size: 14px;
+    margin-top: 12px;
+    min-height: 20px;
+    width: 100%;
+  }
+  .msg.error { color: var(--error); }
+  .msg.ok { color: var(--ok); }
+
+  .result {
+    width: 100%;
+    margin-top: 6px;
+    display: none;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .result.show { display: flex; }
+  .result a {
+    font-family: var(--mono);
+    font-size: 15px;
+    color: var(--accent);
+    word-break: break-all;
+  }
+  .copy-btn {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.3);
+    color: var(--ink);
+    border-radius: 8px;
+    padding: 6px 14px;
+    font-family: var(--mono);
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  .links-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin: 44px 0 14px;
+  }
+  .links-head h2 {
+    font-size: 15px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    font-weight: 700;
+  }
+  .refresh {
+    background: none;
+    border: none;
+    color: var(--ink-dim);
+    font-family: var(--mono);
+    font-size: 14px;
+    cursor: pointer;
+  }
+  .refresh:hover { color: var(--accent); }
+
+  .links-empty { color: var(--ink-dim); font-size: 16px; }
+
+  ul.links { list-style: none; }
+  ul.links li {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin-bottom: 10px;
+    font-family: var(--mono);
+    font-size: 14px;
+    display: flex;
+    gap: 10px;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  ul.links li .short { color: var(--accent); word-break: break-all; }
+  ul.links li .orig { color: var(--ink-dim); word-break: break-all; flex: 1 1 100%; font-size: 13px; }
+  ul.links li .clicks { color: var(--ok); white-space: nowrap; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">S3 &middot; LAMBDA &middot; API GATEWAY &mdash; <span class="hosted">SELF-HOSTED</span></div>
+  <h1>Cut the URL.<br>Keep the link.</h1>
+  <p class="sub">Paste a long address and get a short one served straight from S3.</p>
+
+  <div class="card">
+    <div class="field-col">
+      <input type="url" id="urlInput" placeholder="https://example.com/very/long/path?with=params" autocomplete="off" />
+    </div>
+    <button class="shorten" id="shortenBtn">Shorten</button>
+    <div class="msg" id="msg"></div>
+    <div class="result" id="result">
+      <a id="shortLink" href="#" target="_blank" rel="noopener"></a>
+      <button class="copy-btn" id="copyBtn">copy</button>
+    </div>
+  </div>
+
+  <div class="links-head">
+    <h2>Recent Links</h2>
+    <button class="refresh" id="refreshBtn">&#8635; refresh</button>
+  </div>
+  <p class="links-empty" id="linksEmpty">No links yet &mdash; shorten one above.</p>
+  <ul class="links" id="linksList"></ul>
+</div>
+
+<script>
+/* ============================================================
+   SET THIS FIRST — your API Gateway Invoke URL, no trailing slash.
+   Example: const API_ENDPOINT = "https://abcdef123.execute-api.us-east-1.amazonaws.com";
+   ============================================================ */
+const API_ENDPOINT = "https://ie74tu2tj8.execute-api.us-east-1.amazonaws.com";
+
+const urlInput   = document.getElementById("urlInput");
+const shortenBtn = document.getElementById("shortenBtn");
+const msg        = document.getElementById("msg");
+const result     = document.getElementById("result");
+const shortLink  = document.getElementById("shortLink");
+const copyBtn    = document.getElementById("copyBtn");
+const refreshBtn = document.getElementById("refreshBtn");
+const linksList  = document.getElementById("linksList");
+const linksEmpty = document.getElementById("linksEmpty");
+
+function setMsg(text, kind) {
+  msg.textContent = text || "";
+  msg.className = "msg" + (kind ? " " + kind : "");
+}
+
+function apiConfigured() {
+  return API_ENDPOINT.startsWith("https://") && !API_ENDPOINT.includes("PASTE-YOUR");
+}
+
+async function shorten() {
+  if (!apiConfigured()) {
+    setMsg("Set API_ENDPOINT at the top of this file first.", "error");
+    return;
+  }
+  const longUrl = urlInput.value.trim();
+  if (!longUrl) {
+    setMsg("Paste a URL first.", "error");
+    return;
+  }
+  try { new URL(longUrl); } catch {
+    setMsg("That doesn't look like a valid URL. Include https://", "error");
+    return;
+  }
+
+  shortenBtn.disabled = true;
+  setMsg("Shortening...", "");
+  result.classList.remove("show");
+
+  try {
+    const res = await fetch(API_ENDPOINT + "/shorten", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url: longUrl })
+    });
+
+    const text = await res.text();
+    let data = {};
+    try { data = JSON.parse(text); } catch {}
+
+    if (!res.ok) {
+      setMsg("Error " + res.status + ": " + (data.error || data.message || text || "request failed"), "error");
+      return;
+    }
+
+    const shortUrl = data.shortUrl || data.short_url;
+    if (!shortUrl) {
+      setMsg("Unexpected response: " + text, "error");
+      return;
+    }
+
+    setMsg("Done!", "ok");
+    shortLink.textContent = shortUrl;
+    shortLink.href = shortUrl;
+    result.classList.add("show");
+    urlInput.value = "";
+    loadRecent();
+  } catch (err) {
+    setMsg("Failed to fetch — check the API URL and CORS settings. (" + err.message + ")", "error");
+  } finally {
+    shortenBtn.disabled = false;
+  }
+}
+
+async function loadRecent() {
+  if (!apiConfigured()) return;
+  try {
+    const res = await fetch(API_ENDPOINT + "/stats");
+    if (!res.ok) return;
+    const data = await res.json();
+
+    // Accept a few possible response shapes
+    let items = [];
+    if (Array.isArray(data)) items = data;
+    else if (Array.isArray(data.links)) items = data.links;
+    else if (Array.isArray(data.urls)) items = data.urls;
+    else if (Array.isArray(data.items)) items = data.items;
+
+    linksList.innerHTML = "";
+    if (!items.length) {
+      linksEmpty.style.display = "block";
+      return;
+    }
+    linksEmpty.style.display = "none";
+
+    for (const item of items.slice(0, 20)) {
+      const li = document.createElement("li");
+
+      const short = document.createElement("a");
+      short.className = "short";
+      short.target = "_blank";
+      short.rel = "noopener";
+      short.href = item.shortUrl || item.short_url || "#";
+      short.textContent = item.shortUrl || item.short_url || item.shortCode || item.short_code || "";
+      li.appendChild(short);
+
+      const clicks = item.clicks ?? item.hits ?? item.count;
+      if (clicks !== undefined) {
+        const c = document.createElement("span");
+        c.className = "clicks";
+        c.textContent = clicks + " clicks";
+        li.appendChild(c);
+      }
+
+      const orig = document.createElement("span");
+      orig.className = "orig";
+      orig.textContent = item.originalUrl || item.original_url || item.url || "";
+      li.appendChild(orig);
+
+      linksList.appendChild(li);
+    }
+  } catch {
+    /* stats are optional — fail quietly */
+  }
+}
+
+copyBtn.addEventListener("click", async () => {
+  try {
+    await navigator.clipboard.writeText(shortLink.textContent);
+    copyBtn.textContent = "copied!";
+    setTimeout(() => (copyBtn.textContent = "copy"), 1500);
+  } catch {
+    setMsg("Couldn't copy — select the link and copy manually.", "error");
+  }
+});
+
+shortenBtn.addEventListener("click", shorten);
+urlInput.addEventListener("keydown", (e) => { if (e.key === "Enter") shorten(); });
+refreshBtn.addEventListener("click", loadRecent);
+
+loadRecent();
+</script>
+</body>
+</html>
