@@ -112,12 +112,6 @@ curl -X POST \
 
 Order of operations matters less than understanding **who is accessing what**: Lambda writes via IAM, browsers read via bucket policy.
 
-## Costs & limits
-
-For light usage this sits inside the AWS free tier: S3 charges fractions of a cent for storage and requests, Lambda's free tier covers far more invocations than a personal shortener will see, and HTTP APIs are the cheap tier of API Gateway. There is no idle cost — nothing runs between requests.
-
-Trade-offs: short links use the long S3 website hostname (a custom domain via CloudFront + Route 53 fixes that), redirects are HTTP on the raw endpoint (also solved by CloudFront, which adds HTTPS), and click analytics are limited to what S3 access logging provides.
-
 ## Tear-down
 
 ```bash
