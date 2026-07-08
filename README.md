@@ -140,4 +140,4 @@ aws apigatewayv2 delete-api --api-id <api-id>
 
 ---
 
-Built by [Lewis Cloud Innovations](https://www.lewiscloudinnovations.com) · MIT License
+Built by [Lewis Cloud Innovations](https://www.lewiscloudinnovations.com)· MIT License
