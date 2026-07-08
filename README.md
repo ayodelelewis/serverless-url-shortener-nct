@@ -2,7 +2,7 @@
 
 A URL shortener I built entirely on AWS serverless services — **no database, no servers, nothing to patch or keep running**. The whole "database" is an S3 bucket, and S3 itself performs the redirects. Lambda only runs for a fraction of a second when a new link is created.
 
-![Frontend screenshot](frontend.png)
+![Frontend screenshot](frontend.jpeg)
 
 ## What it does
 
@@ -14,7 +14,7 @@ http://<data-bucket>.s3-website-us-east-1.amazonaws.com/44eadc83
 
 Anyone who opens that short link is instantly redirected to the original address.
 
-![Redirect landing page](redirect-landingpage.png)
+![Redirect landing page](redirect-landingpage.jpeg)
 
 ## The idea behind it
 
